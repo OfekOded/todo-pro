@@ -41,10 +41,12 @@ a {
     color: var(--link-color);
     text-decoration: none;
     font-size: 0.9rem;
+    transition: color 0.2s;
 }
 
 a:hover {
     text-decoration: underline;
+    color: var(--primary-hover);
 }
 
 button {
@@ -52,6 +54,7 @@ button {
     font-family: inherit;
     border: none;
     outline: none;
+    transition: all 0.2s ease;
 }
 
 input, textarea, select {
@@ -62,31 +65,38 @@ input, textarea, select {
     border-radius: 8px;
     font-size: 1rem;
     color: var(--text-main);
-    transition: border-color 0.2s;
+    background-color: var(--surface-color);
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus, textarea:focus, select:focus {
     border-color: var(--primary-color);
     outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
 }
 
 .btn-primary {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.5rem;
     background-color: var(--primary-color);
     color: white;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
-    transition: background-color 0.2s;
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.5rem;
     background-color: transparent;
     color: var(--text-muted);
     border: 1px solid var(--border-color);
@@ -96,7 +106,8 @@ input:focus, textarea:focus, select:focus {
 }
 
 .btn-secondary:hover {
-    background-color: var(--bg-color);
+    background-color: var(--border-color);
+    color: var(--text-main);
 }
 
 .auth-container {
@@ -112,33 +123,35 @@ input:focus, textarea:focus, select:focus {
     background-color: var(--surface-color);
     padding: 3rem;
     border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
     width: 100%;
     max-width: 450px;
     text-align: center;
 }
 
 .logo-icon {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     background-color: var(--primary-color);
-    border-radius: 12px;
+    border-radius: 14px;
     margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
 }
 
 .logo-icon::after {
     content: "✓";
     color: white;
-    font-size: 24px;
+    font-size: 28px;
     font-weight: bold;
 }
 
 .auth-box h2 {
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
+    font-weight: 700;
 }
 
 .auth-box p {
@@ -155,7 +168,8 @@ input:focus, textarea:focus, select:focus {
     display: block;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--text-main);
 }
 
 .label-row {
@@ -170,8 +184,9 @@ input:focus, textarea:focus, select:focus {
 }
 
 .auth-footer {
-    margin-top: 2rem;
-    font-size: 0.9rem;
+    margin-top: 2.5rem;
+    font-size: 0.95rem;
+    color: var(--text-muted);
 }
 
 .app-layout {
@@ -185,6 +200,8 @@ input:focus, textarea:focus, select:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .logo-area {
@@ -194,20 +211,26 @@ input:focus, textarea:focus, select:focus {
 }
 
 .logo-icon-small {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     background-color: var(--primary-color);
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .logo-icon-small::after {
     content: "✓";
     color: white;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
+}
+
+.logo-area h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .user-actions {
@@ -222,6 +245,12 @@ input:focus, textarea:focus, select:focus {
     color: var(--text-muted);
     border: 1px solid var(--border-color);
     border-radius: 6px;
+    font-weight: 500;
+}
+
+#btn-logout:hover {
+    background-color: var(--border-color);
+    color: var(--text-main);
 }
 
 .greeting-section {
@@ -229,8 +258,10 @@ input:focus, textarea:focus, select:focus {
 }
 
 .greeting-section h1 {
-    font-size: 2rem;
+    font-size: 2.25rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
 }
 
 .greeting-section p {
@@ -242,15 +273,48 @@ input:focus, textarea:focus, select:focus {
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
+    align-items: center;
 }
 
 .search-bar {
     flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-bar input {
+    padding-right: 2.5rem;
+}
+
+.btn-clear {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-clear:hover {
+    color: var(--danger-color);
+    background-color: var(--bg-color);
+}
+
+.sort-bar {
+    width: 180px;
 }
 
 .controls-section .btn-primary {
     width: auto;
-    padding: 0.75rem 1.5rem;
+    white-space: nowrap;
 }
 
 .tabs-section {
@@ -262,17 +326,61 @@ input:focus, textarea:focus, select:focus {
 
 .tab {
     background: none;
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
     font-size: 1rem;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
 }
 
-.tab.active {
+.tab:hover {
     color: var(--text-main);
+}
+
+.tab.active {
+    color: var(--primary-color);
     border-bottom-color: var(--primary-color);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    border: 1px dashed var(--border-color);
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    background-color: var(--bg-color);
+    border-radius: 50%;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.empty-icon::after {
+    content: "📝";
+    font-size: 32px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--text-muted);
 }
 
 .tasks-list {
@@ -284,17 +392,25 @@ input:focus, textarea:focus, select:focus {
 .task-item {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 1.25rem;
     background-color: var(--surface-color);
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    border: 1px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.05);
+    border-color: var(--border-color);
 }
 
 .task-checkbox {
-    width: 24px;
-    height: 24px;
-    margin-top: 0.2rem;
+    width: 22px;
+    height: 22px;
+    margin-top: 0.25rem;
     cursor: pointer;
     accent-color: var(--primary-color);
 }
@@ -306,14 +422,31 @@ input:focus, textarea:focus, select:focus {
 .task-meta {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 .task-title {
-    font-size: 1.1rem;
-    font-weight: 500;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.task-description {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.task-item.completed {
+    opacity: 0.7;
+    background-color: var(--bg-color);
 }
 
 .task-item.completed .task-title {
@@ -324,7 +457,10 @@ input:focus, textarea:focus, select:focus {
 .tag {
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
 }
 
 .tag-design { background-color: var(--tag-design-bg); color: var(--tag-design-text); }
@@ -333,23 +469,26 @@ input:focus, textarea:focus, select:focus {
 .tag-general { background-color: var(--tag-general-bg); color: var(--tag-general-text); }
 .tag-health { background-color: var(--tag-health-bg); color: var(--tag-health-text); }
 
-.time, .overdue {
+.time {
     color: var(--text-muted);
+    font-weight: 500;
 }
 
 .overdue {
     color: var(--danger-color);
+    font-weight: 600;
 }
 
 .task-actions {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
+    gap: 1rem;
+    margin-top: 0.5rem;
 }
 
 .btn-edit, .btn-delete {
     background: none;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--text-muted);
 }
 
@@ -362,42 +501,59 @@ input:focus, textarea:focus, select:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(15, 23, 42, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 .modal-box {
     background-color: var(--surface-color);
     width: 100%;
-    max-width: 500px;
-    padding: 2rem;
-    border-radius: 16px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 550px;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(0);
+    transition: transform 0.3s ease;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .modal-header h3 {
     font-size: 1.5rem;
+    font-weight: 700;
 }
 
 .btn-close {
-    background: none;
-    font-size: 1.25rem;
+    background: var(--bg-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1rem;
+    font-weight: bold;
     color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close:hover {
+    background-color: var(--border-color);
+    color: var(--text-main);
 }
 
 .form-row {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .form-row .input-group {
@@ -408,13 +564,78 @@ input:focus, textarea:focus, select:focus {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
 }
 
 .modal-actions button {
     width: auto;
 }
 
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: var(--surface-color);
+    color: var(--text-main);
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--primary-color);
+    pointer-events: auto;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast.error {
+    border-left-color: var(--danger-color);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 .hidden {
     display: none !important;
+}
+
+@media (max-width: 768px) {
+    .controls-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .sort-bar {
+        width: 100%;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .toast-container {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+    }
 }

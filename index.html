@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <div id="toast-container" class="toast-container"></div>
     <div id="app-container"></div>
 
     <template id="login-template">
@@ -51,6 +52,10 @@
                         <label for="reg-password">Password</label>
                         <input type="password" id="reg-password" required>
                     </div>
+                    <div class="input-group">
+                        <label for="reg-password-confirm">Confirm Password</label>
+                        <input type="password" id="reg-password-confirm" required>
+                    </div>
                     <button type="submit" class="btn-primary">Sign Up</button>
                 </form>
                 <p class="auth-footer">Already have an account? <a href="#/">Log In</a></p>
@@ -79,6 +84,14 @@
                 <div class="controls-section">
                     <div class="search-bar">
                         <input type="text" id="search-input">
+                        <button id="btn-clear-search" class="btn-clear hidden">X</button>
+                    </div>
+                    <div class="sort-bar">
+                        <select id="task-sort">
+                            <option value="date-asc">Date (Ascending)</option>
+                            <option value="date-desc">Date (Descending)</option>
+                            <option value="priority">Priority</option>
+                        </select>
                     </div>
                     <button id="btn-open-modal" class="btn-primary">Add Task</button>
                 </div>
@@ -87,6 +100,12 @@
                     <button class="tab" data-filter="all">All Tasks</button>
                     <button class="tab" data-filter="pending">Pending</button>
                     <button class="tab" data-filter="completed">Completed</button>
+                </div>
+
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="empty-icon"></div>
+                    <h3>No tasks found</h3>
+                    <p>Try adjusting your search or add a new task.</p>
                 </div>
 
                 <div class="tasks-list" id="tasks-container"></div>
@@ -110,15 +129,23 @@
                         </div>
                         <div class="form-row">
                             <div class="input-group">
+                                <label for="task-category">Category</label>
+                                <select id="task-category">
+                                    <option value="personal">Personal</option>
+                                    <option value="work">Work</option>
+                                    <option value="shopping">Shopping</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
                                 <label for="task-date">Due Date</label>
                                 <input type="date" id="task-date">
                             </div>
                             <div class="input-group">
                                 <label for="task-priority">Priority</label>
                                 <select id="task-priority">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
                                     <option value="low">Low</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="high">High</option>
                                 </select>
                             </div>
                         </div>
@@ -138,6 +165,7 @@
             <div class="task-content">
                 <div class="task-meta"></div>
                 <p class="task-title"></p>
+                <p class="task-description"></p>
                 <div class="task-actions">
                     <button class="btn-edit">Edit</button>
                     <button class="btn-delete">Delete</button>
