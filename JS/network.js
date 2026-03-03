@@ -1,6 +1,6 @@
 class Network {
     constructor() {
-        this.dropProbability = 0.2;
+        this.dropProbability = 0.0;
     }
 
     sendRequest(request, callback) {
