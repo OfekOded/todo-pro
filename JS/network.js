@@ -1,10 +1,12 @@
 class Network {
     constructor() {
-        this.dropProbability = 0.0;
+        this.dropProbability = 0.3;
+        this.minDelay = 300;
+        this.maxDelayExtra = 500;
     }
 
     sendRequest(request, callback) {
-        const delay = Math.floor(Math.random() * 2000) + 1000;
+        const delay = Math.floor(Math.random() * this.maxDelayExtra) + this.minDelay;
         const isDropped = Math.random() < this.dropProbability;
 
         setTimeout(() => {
@@ -36,7 +38,7 @@ class Network {
                     response = serverAuth.login(request.body);
                 } else if (request.url === '/api/auth/register' && request.method === 'POST') {
                     response = serverAuth.register(request.body);
-                } else if (request.url === '/api/auth/logout') {
+                } else if (request.url === '/api/auth/logout' && request.method === 'POST') {
                     response = serverAuth.logout(request.token);
                 } else {
                     response = { status: 404, success: false, message: "Not Found" };

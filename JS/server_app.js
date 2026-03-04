@@ -8,7 +8,7 @@ class ServerApp {
             return {
                 status: 401,
                 success: false,
-                message: "Accès refusé. Vous devez être connecté pour effectuer cette action."
+                message: "Access denied. You must be logged in to perform this action."
             };
         }
 
@@ -25,6 +25,10 @@ class ServerApp {
         if (taskMatch) {
             const taskId = taskMatch[1];
 
+            if (method === 'GET') {
+                return this._getTaskById(userId, taskId);
+            }
+
             if (method === 'PUT') {
                 return this._updateTask(userId, taskId, data);
             }
@@ -37,7 +41,7 @@ class ServerApp {
         return {
             status: 404,
             success: false,
-            message: "Route API non trouvée."
+            message: "API route not found."
         };
     }
 
@@ -50,7 +54,26 @@ class ServerApp {
             status: 200,
             success: true,
             data: userTasks,
-            message: "Tâches récupérées avec succès."
+            message: "Tasks retrieved successfully."
+        };
+    }
+
+    _getTaskById(userId, taskId) {
+        const task = tasksDB.getById(taskId);
+
+        if (!task || task.userId !== userId) {
+            return {
+                status: 404,
+                success: false,
+                message: "Task not found."
+            };
+        }
+
+        return {
+            status: 200,
+            success: true,
+            data: task,
+            message: "Task retrieved successfully."
         };
     }
 
@@ -59,7 +82,7 @@ class ServerApp {
             return {
                 status: 400,
                 success: false,
-                message: "Le titre de la tâche est obligatoire."
+                message: "Task title is required."
             };
         }
 
@@ -80,7 +103,7 @@ class ServerApp {
             status: 201,
             success: true,
             data: savedTask,
-            message: "Tâche ajoutée avec succès !"
+            message: "Task created successfully!"
         };
     }
 
@@ -88,14 +111,14 @@ class ServerApp {
         const task = tasksDB.getById(taskId);
 
         if (!task) {
-            return { status: 404, success: false, message: "Tâche introuvable." };
+            return { status: 404, success: false, message: "Task not found." };
         }
         
         if (task.userId !== userId) {
             return { 
                 status: 403,
                 success: false, 
-                message: "Accès refusé. Cette tâche ne vous appartient pas." 
+                message: "Access denied. This task does not belong to you." 
             };
         }
 
@@ -108,7 +131,7 @@ class ServerApp {
             status: 200,
             success: true,
             data: updatedTask,
-            message: "Tâche mise à jour avec succès."
+            message: "Task updated successfully."
         };
     }
 
@@ -116,14 +139,14 @@ class ServerApp {
         const task = tasksDB.getById(taskId);
 
         if (!task) {
-            return { status: 404, success: false, message: "Tâche introuvable." };
+            return { status: 404, success: false, message: "Task not found." };
         }
         
         if (task.userId !== userId) {
             return { 
                 status: 403, 
                 success: false, 
-                message: "Accès refusé. Cette tâche ne vous appartient pas." 
+                message: "Access denied. This task does not belong to you." 
             };
         }
 
@@ -133,13 +156,13 @@ class ServerApp {
             return {
                 status: 200,
                 success: true,
-                message: "Tâche supprimée avec succès."
+                message: "Task deleted successfully."
             };
         } else {
             return {
                 status: 500,
                 success: false,
-                message: "Une erreur est survenue lors de la suppression."
+                message: "An error occurred during deletion."
             };
         }
     }

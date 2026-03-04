@@ -7,7 +7,12 @@ class DB_API {
     }
 
     getAll() {
-        return JSON.parse(localStorage.getItem(this.dbName));
+        try {
+            return JSON.parse(localStorage.getItem(this.dbName)) || [];
+        } catch (e) {
+            localStorage.setItem(this.dbName, JSON.stringify([]));
+            return [];
+        }
     }
 
     getById(id) {

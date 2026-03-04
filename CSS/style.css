@@ -618,6 +618,63 @@ textarea {
     display: none !important;
 }
 
+
+
+
+/* ---- Badges de métadonnées des tâches ---- */
+.category-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background-color: var(--tag-general-bg);
+    color: var(--tag-general-text);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+}
+
+.priority-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+}
+
+.priority-low    { background-color: #f1f5f9; color: #64748b; }
+.priority-normal { background-color: #e0f2fe; color: #0284c7; }
+.priority-high   { background-color: #fee2e2; color: #dc2626; }
+
+.due-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* ---- État de chargement (loading) ---- */
+.tasks-list.loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.tasks-list.loading::before {
+    content: 'Loading…';
+    position: absolute;
+    top: -2rem;
+    left: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ---- Boutons désactivés ---- */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
     .controls-section {
         flex-direction: column;

@@ -3,7 +3,6 @@ class Router {
         this.routes = routes;
         this.container = document.getElementById(containerId);
         window.addEventListener('hashchange', this.navigate.bind(this));
-        window.addEventListener('load', this.navigate.bind(this));
     }
 
     navigate() {

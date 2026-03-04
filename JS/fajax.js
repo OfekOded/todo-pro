@@ -20,8 +20,20 @@ class FAJAX {
     }
 
     send(body) {
-        this.body = body ? JSON.parse(body) : null;
-        
+        if (body && typeof body === 'string') {
+            try {
+                this.body = JSON.parse(body);
+            } catch (e) {
+                this.status = 400;
+                if (typeof this.onerror === 'function') this.onerror();
+                return;
+            }
+        } else if (body && typeof body === 'object') {
+            this.body = body;
+        } else {
+            this.body = null;
+        }
+
         const request = {
             method: this.method,
             url: this.url,
