@@ -86,8 +86,22 @@ class ServerApp {
             };
         }
 
+        if (taskData.clientId) {
+            const allTasks = tasksDB.getAll();
+            const existingTask = allTasks.find(t => t.userId === userId && t.clientId === taskData.clientId);
+            if (existingTask) {
+                return {
+                    status: 200,
+                    success: true,
+                    data: existingTask,
+                    message: "Task already created."
+                };
+            }
+        }
+
         const newTask = {
             userId: userId,
+            clientId: taskData.clientId || null,
             title: taskData.title,
             description: taskData.description || "",
             category: taskData.category || "personal",

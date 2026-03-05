@@ -439,6 +439,8 @@ const createTaskFetcher = (context, { withLock, setLoading, renderTasks }) => {
                     const retryBtn = $('#btn-retry-load');
                     if (retryBtn) {
                         retryBtn.addEventListener('click', () => {
+                            retryBtn.disabled = true;
+                            retryBtn.textContent = 'Loading...';
                             withLock(_fetchAndRender);
                         });
                     }
@@ -513,12 +515,14 @@ const bindModal = ({ withLock, fetchAndRender }) => {
         modal.classList.add('hidden');
         taskForm.reset();
         $('#task-id').value = '';
+        delete taskForm.dataset.clientId;
     };
 
     if (openModalBtn) openModalBtn.addEventListener('click', () => {
         const today = new Date().toISOString().split('T')[0];
         const dateInput = $('#task-date');
         if (dateInput) dateInput.min = today;
+        taskForm.dataset.clientId = Date.now().toString() + Math.random().toString(36).substring(2);
         modal.classList.remove('hidden');
     });
 
@@ -535,6 +539,7 @@ const bindModal = ({ withLock, fetchAndRender }) => {
             const category = $('#task-category').value;
             const priority = $('#task-priority').value;
             const dueDate = $('#task-date').value;
+            const clientId = taskForm.dataset.clientId;
 
             if (dueDate && !taskId) {
                 const today = new Date().toISOString().split('T')[0];
@@ -560,7 +565,7 @@ const bindModal = ({ withLock, fetchAndRender }) => {
                     response = await apiRequest({
                         method: 'POST',
                         url: '/api/tasks',
-                        body: { title, description, category, priority, dueDate },
+                        body: { title, description, category, priority, dueDate, clientId },
                         auth: true
                     });
                 }
