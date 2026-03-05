@@ -97,14 +97,17 @@ const apiRequest = async ({ method, url, body = null, auth = false }) => {
         return { ok: false, status: 401, data: null, error: 'Missing token' };
     }
 
+    const isSafeToRetry = method !== 'POST';
+    const attemptsAllowed = isSafeToRetry ? MAX_RETRIES : 0;
+
     let lastResult;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= attemptsAllowed; attempt++) {
         lastResult = await _doSingleRequest({ method, url, body, auth });
 
         if (lastResult.status !== 0) break;
 
-        if (attempt < MAX_RETRIES) {
-            showToast(`Unstable network, retrying (${attempt + 1}/${MAX_RETRIES})…`, false);
+        if (attempt < attemptsAllowed) {
+            showToast(`Unstable network, retrying (${attempt + 1}/${attemptsAllowed})...`, false);
         }
     }
 
@@ -114,7 +117,6 @@ const apiRequest = async ({ method, url, body = null, auth = false }) => {
 
     return lastResult;
 };
-
 
 const showToast = (message, isError = false) => {
     const container = $('#toast-container');
@@ -268,7 +270,7 @@ const getCategoryLabel = (category) => {
     return labels[category] || category;
 };
 
-const createRenderer = (context, { withLock, setLoading, fetchAndRender }) => {
+const createRenderer = (context, apiFns) => {
     const renderTasks = (tasks) => {
         const container = $('#tasks-container');
         const emptyState = $('#empty-state');
@@ -346,34 +348,41 @@ const createRenderer = (context, { withLock, setLoading, fetchAndRender }) => {
                 }
 
                 checkbox.addEventListener('change', async (e) => {
-                    await withLock(async () => {
-                        setLoading(true);
-                        const res = await apiRequest({
-                            method: 'PUT',
-                            url: `/api/tasks/${task.id}`,
-                            body: { completed: e.target.checked },
-                            auth: true
-                        });
-                        if (!res.ok) showToast('Failed to update task', true);
-                        await fetchAndRender();
+                    await apiFns.withLock(async () => {
+                        apiFns.setLoading(true);
+                        try {
+                            const res = await apiRequest({
+                                method: 'PUT',
+                                url: `/api/tasks/${task.id}`,
+                                body: { completed: e.target.checked },
+                                auth: true
+                            });
+                            if (!res.ok) showToast('Failed to update task', true);
+                            await apiFns.fetchAndRender();
+                        } finally {
+                            apiFns.setLoading(false);
+                        }
                     });
                 });
 
                 template.querySelector('.btn-delete').addEventListener('click', async () => {
                     if (!confirm('Are you sure you want to delete this task?')) return;
-                    await withLock(async () => {
-                        setLoading(true);
-                        const res = await apiRequest({
-                            method: 'DELETE',
-                            url: `/api/tasks/${task.id}`,
-                            auth: true
-                        });
-                        if (res.ok) {
-                            showToast('Task deleted.');
-                            await fetchAndRender();
-                        } else {
-                            showToast(res.error || 'Failed to delete task', true);
-                            setLoading(false);
+                    await apiFns.withLock(async () => {
+                        apiFns.setLoading(true);
+                        try {
+                            const res = await apiRequest({
+                                method: 'DELETE',
+                                url: `/api/tasks/${task.id}`,
+                                auth: true
+                            });
+                            if (res.ok) {
+                                showToast('Task deleted.');
+                                await apiFns.fetchAndRender();
+                            } else {
+                                showToast(res.error || 'Failed to delete task', true);
+                            }
+                        } finally {
+                            apiFns.setLoading(false);
                         }
                     });
                 });
@@ -404,10 +413,36 @@ const createTaskFetcher = (context, { withLock, setLoading, renderTasks }) => {
         try {
             const response = await apiRequest({ method: 'GET', url: '/api/tasks', auth: true });
             if (response.status === 401) return;
-            if (response.ok && response.data.success) {
+            
+            if (response.ok && response.data && response.data.success) {
+                context.hasError = false;
                 context.allTasks = response.data.data;
                 renderTasks(context.allTasks);
             } else {
+                context.hasError = true;
+                const container = $('#tasks-container');
+                const emptyState = $('#empty-state');
+                
+                if (emptyState) {
+                    emptyState.classList.add('hidden');
+                }
+                
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="background: transparent; border: none;">
+                            <h3>Network Error</h3>
+                            <p style="margin-bottom: 1.5rem;">Failed to load your tasks. Please check your connection.</p>
+                            <button id="btn-retry-load" class="btn-primary" style="width: auto;">Try Again</button>
+                        </div>
+                    `;
+                    
+                    const retryBtn = $('#btn-retry-load');
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', () => {
+                            withLock(_fetchAndRender);
+                        });
+                    }
+                }
                 showToast('Failed to load tasks', true);
             }
         } finally {
@@ -437,7 +472,7 @@ const bindFilters = (context, renderTasks) => {
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', context.searchQuery === '');
             }
-            renderTasks(context.allTasks);
+            if (!context.hasError) renderTasks(context.allTasks);
         });
     }
 
@@ -446,14 +481,14 @@ const bindFilters = (context, renderTasks) => {
             searchInput.value = '';
             context.searchQuery = '';
             clearSearchBtn.classList.add('hidden');
-            renderTasks(context.allTasks);
+            if (!context.hasError) renderTasks(context.allTasks);
         });
     }
 
     if (sortSelect) {
         sortSelect.addEventListener('change', () => {
             context.sortMode = sortSelect.value;
-            renderTasks(context.allTasks);
+            if (!context.hasError) renderTasks(context.allTasks);
         });
     }
 
@@ -462,7 +497,7 @@ const bindFilters = (context, renderTasks) => {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             context.activeFilter = tab.dataset.filter;
-            renderTasks(context.allTasks);
+            if (!context.hasError) renderTasks(context.allTasks);
         });
     });
 };
@@ -501,7 +536,7 @@ const bindModal = ({ withLock, fetchAndRender }) => {
             const priority = $('#task-priority').value;
             const dueDate = $('#task-date').value;
 
-            if (dueDate) {
+            if (dueDate && !taskId) {
                 const today = new Date().toISOString().split('T')[0];
                 if (dueDate < today) {
                     showToast('Due date cannot be in the past', true);
