@@ -50,72 +50,69 @@ const isLoggedIn = () => {
     return !!state.token && state.token.trim() !== '';
 };
 
-const _doSingleRequest = ({ method, url, body, auth }) => {
-    return new Promise((resolve) => {
-        const xhr = new FAJAX();
-        xhr.open(method, url);
+const _doSingleRequest = ({ method, url, body, auth }, callback) => {
+    const xhr = new FAJAX();
+    xhr.open(method, url);
 
-        if (auth) {
-            xhr.setRequestHeader('Authorization', `Bearer ${state.token}`);
-        }
+    if (auth) {
+        xhr.setRequestHeader('Authorization', `Bearer ${state.token}`);
+    }
 
-        xhr.onload = () => {
-            let data = null;
-            if (xhr.responseText && xhr.responseText.trim() !== '') {
-                try {
-                    data = JSON.parse(xhr.responseText);
-                } catch (e) {
-                    resolve({ ok: false, status: xhr.status, data: null, error: 'Invalid server response' });
-                    return;
-                }
-            }
-
-            if (xhr.status === 401) {
-                clearSession();
-                window.location.hash = '/';
-                resolve({ ok: false, status: 401, data: null, error: 'Session expired' });
+    xhr.onload = () => {
+        let data = null;
+        if (xhr.responseText && xhr.responseText.trim() !== '') {
+            try {
+                data = JSON.parse(xhr.responseText);
+            } catch (e) {
+                callback({ ok: false, status: xhr.status, data: null, error: 'Invalid server response' });
                 return;
             }
+        }
 
-            if (xhr.status >= 200 && xhr.status < 300) {
-                resolve({ ok: true, status: xhr.status, data, error: null });
-            } else {
-                resolve({ ok: false, status: xhr.status, data, error: data?.message || 'Erreur serveur' });
-            }
-        };
+        if (xhr.status === 401) {
+            clearSession();
+            window.location.hash = '/';
+            callback({ ok: false, status: 401, data: null, error: 'Session expired' });
+            return;
+        }
 
-        // status 0 = perte réseau (drop simulé ou échec réel)
-        xhr.onerror = () => resolve({ ok: false, status: 0, data: null, error: 'Network failure' });
+        if (xhr.status >= 200 && xhr.status < 300) {
+            callback({ ok: true, status: xhr.status, data, error: null });
+        } else {
+            callback({ ok: false, status: xhr.status, data, error: data?.message || 'Erreur serveur' });
+        }
+    };
 
-        xhr.send(body ? JSON.stringify(body) : null);
-    });
+    xhr.onerror = () => callback({ ok: false, status: 0, data: null, error: 'Network failure' });
+
+    xhr.send(body ? JSON.stringify(body) : null);
 };
 
 const MAX_RETRIES = 2;
-const apiRequest = async ({ method, url, body = null, auth = false }) => {
+const apiRequest = ({ method, url, body = null, auth = false }, callback) => {
     if (auth && !isLoggedIn()) {
-        return { ok: false, status: 401, data: null, error: 'Missing token' };
+        callback({ ok: false, status: 401, data: null, error: 'Missing token' });
+        return;
     }
 
     const isSafeToRetry = method !== 'POST';
     const attemptsAllowed = isSafeToRetry ? MAX_RETRIES : 0;
 
-    let lastResult;
-    for (let attempt = 0; attempt <= attemptsAllowed; attempt++) {
-        lastResult = await _doSingleRequest({ method, url, body, auth });
+    const attemptRequest = (attempt) => {
+        _doSingleRequest({ method, url, body, auth }, (result) => {
+            if (result.status !== 0 || attempt >= attemptsAllowed) {
+                if (result.status === 0) {
+                    showToast('Unable to reach the server. Please check your connection.', true);
+                }
+                callback(result);
+            } else {
+                showToast(`Unstable network, retrying (${attempt + 1}/${attemptsAllowed})...`, false);
+                attemptRequest(attempt + 1);
+            }
+        });
+    };
 
-        if (lastResult.status !== 0) break;
-
-        if (attempt < attemptsAllowed) {
-            showToast(`Unstable network, retrying (${attempt + 1}/${attemptsAllowed})...`, false);
-        }
-    }
-
-    if (lastResult.status === 0) {
-        showToast('Unable to reach the server. Please check your connection.', true);
-    }
-
-    return lastResult;
+    attemptRequest(0);
 };
 
 const showToast = (message, isError = false) => {
@@ -141,30 +138,43 @@ const initLogin = () => {
 
     const form = $('#login-form');
     if (form) {
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const email = $('#login-email').value;
             const password = $('#login-password').value;
-            const btn = form.querySelector('button[type="submit"]');
 
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
+
+            if (!emailRegex.test(email)) {
+                showToast('Invalid email format', true);
+                return;
+            }
+
+            if (!passwordRegex.test(password)) {
+                showToast('Password must be at least 8 characters long, including at least one letter and one number', true);
+                return;
+            }
+
+            const btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
 
-            const response = await apiRequest({
+            apiRequest({
                 method: 'POST',
                 url: '/api/auth/login',
                 body: { email, password }
+            }, (response) => {
+                btn.disabled = false;
+
+                if (response.ok && response.data.success) {
+                    saveSession(response.data.data.token, response.data.data.user);
+                    showToast('Logged in successfully!');
+                    window.location.hash = '/tasks';
+                } else {
+                    showToast(response.error || 'Login failed', true);
+                }
             });
-
-            btn.disabled = false;
-
-            if (response.ok && response.data.success) {
-                saveSession(response.data.data.token, response.data.data.user);
-                showToast('Logged in successfully!');
-                window.location.hash = '/tasks';
-            } else {
-                showToast(response.error || 'Login failed', true);
-            }
         });
     }
 };
@@ -177,13 +187,26 @@ const initRegister = () => {
 
     const form = $('#register-form');
     if (form) {
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const name = $('#reg-name').value;
             const email = $('#reg-email').value;
             const password = $('#reg-password').value;
             const passwordConfirm = $('#reg-password-confirm').value;
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
+
+            if (!emailRegex.test(email)) {
+                showToast('Invalid email format', true);
+                return;
+            }
+
+            if (!passwordRegex.test(password)) {
+                showToast('Password must be at least 8 characters long, including at least one letter and one number', true);
+                return;
+            }
 
             if (password !== passwordConfirm) {
                 showToast('Passwords do not match', true);
@@ -193,20 +216,20 @@ const initRegister = () => {
             const btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
 
-            const response = await apiRequest({
+            apiRequest({
                 method: 'POST',
                 url: '/api/auth/register',
                 body: { name, email, password }
+            }, (response) => {
+                btn.disabled = false;
+
+                if (response.ok && response.data.success) {
+                    showToast('Registration successful! Please log in.');
+                    window.location.hash = '/';
+                } else {
+                    showToast(response.error || 'Registration failed', true);
+                }
             });
-
-            btn.disabled = false;
-
-            if (response.ok && response.data.success) {
-                showToast('Registration successful! Please log in.');
-                window.location.hash = '/';
-            } else {
-                showToast(response.error || 'Registration failed', true);
-            }
         });
     }
 };
@@ -219,27 +242,26 @@ const setupHeader = () => {
 
     const logoutBtn = $('#btn-logout');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            await apiRequest({ method: 'POST', url: '/api/auth/logout', auth: true });
-            clearSession();
-            window.location.hash = '/';
+        logoutBtn.addEventListener('click', () => {
+            apiRequest({ method: 'POST', url: '/api/auth/logout', auth: true }, () => {
+                clearSession();
+                window.location.hash = '/';
+            });
         });
     }
 };
 
 const createLock = () => {
     let inFlight = false;
-    const withLock = async (fn) => {
+    const withLock = (fn) => {
         if (inFlight) {
             showToast('An action is already in progress, please wait.', false);
             return;
         }
         inFlight = true;
-        try {
-            await fn();
-        } finally {
+        fn(() => {
             inFlight = false;
-        }
+        });
     };
     return { withLock };
 };
@@ -347,43 +369,45 @@ const createRenderer = (context, apiFns) => {
                     taskItem.classList.add('completed');
                 }
 
-                checkbox.addEventListener('change', async (e) => {
-                    await apiFns.withLock(async () => {
+                checkbox.addEventListener('change', (e) => {
+                    apiFns.withLock((unlock) => {
                         apiFns.setLoading(true);
-                        try {
-                            const res = await apiRequest({
-                                method: 'PUT',
-                                url: `/api/tasks/${task.id}`,
-                                body: { completed: e.target.checked },
-                                auth: true
-                            });
+                        apiRequest({
+                            method: 'PUT',
+                            url: `/api/tasks/${task.id}`,
+                            body: { completed: e.target.checked },
+                            auth: true
+                        }, (res) => {
                             if (!res.ok) showToast('Failed to update task', true);
-                            await apiFns.fetchAndRender();
-                        } finally {
-                            apiFns.setLoading(false);
-                        }
+                            apiFns.fetchAndRender(() => {
+                                apiFns.setLoading(false);
+                                unlock();
+                            });
+                        });
                     });
                 });
 
-                template.querySelector('.btn-delete').addEventListener('click', async () => {
+                template.querySelector('.btn-delete').addEventListener('click', () => {
                     if (!confirm('Are you sure you want to delete this task?')) return;
-                    await apiFns.withLock(async () => {
+                    apiFns.withLock((unlock) => {
                         apiFns.setLoading(true);
-                        try {
-                            const res = await apiRequest({
-                                method: 'DELETE',
-                                url: `/api/tasks/${task.id}`,
-                                auth: true
-                            });
+                        apiRequest({
+                            method: 'DELETE',
+                            url: `/api/tasks/${task.id}`,
+                            auth: true
+                        }, (res) => {
                             if (res.ok) {
                                 showToast('Task deleted.');
-                                await apiFns.fetchAndRender();
+                                apiFns.fetchAndRender(() => {
+                                    apiFns.setLoading(false);
+                                    unlock();
+                                });
                             } else {
                                 showToast(res.error || 'Failed to delete task', true);
+                                apiFns.setLoading(false);
+                                unlock();
                             }
-                        } finally {
-                            apiFns.setLoading(false);
-                        }
+                        });
                     });
                 });
 
@@ -408,11 +432,14 @@ const createRenderer = (context, apiFns) => {
 };
 
 const createTaskFetcher = (context, { withLock, setLoading, renderTasks }) => {
-    const _fetchAndRender = async () => {
+    const _fetchAndRender = (callback) => {
         setLoading(true);
-        try {
-            const response = await apiRequest({ method: 'GET', url: '/api/tasks', auth: true });
-            if (response.status === 401) return;
+        apiRequest({ method: 'GET', url: '/api/tasks', auth: true }, (response) => {
+            if (response.status === 401) {
+                setLoading(false);
+                if (typeof callback === 'function') callback();
+                return;
+            }
             
             if (response.ok && response.data && response.data.success) {
                 context.hasError = false;
@@ -441,19 +468,28 @@ const createTaskFetcher = (context, { withLock, setLoading, renderTasks }) => {
                         retryBtn.addEventListener('click', () => {
                             retryBtn.disabled = true;
                             retryBtn.textContent = 'Loading...';
-                            withLock(_fetchAndRender);
+                            withLock((unlock) => {
+                                _fetchAndRender(() => {
+                                    unlock();
+                                });
+                            });
                         });
                     }
                 }
                 showToast('Failed to load tasks', true);
             }
-        } finally {
             setLoading(false);
-        }
+            if (typeof callback === 'function') callback();
+        });
     };
 
-    const loadTasks = async () => {
-        await withLock(_fetchAndRender);
+    const loadTasks = (callback) => {
+        withLock((unlock) => {
+            _fetchAndRender(() => {
+                unlock();
+                if (typeof callback === 'function') callback();
+            });
+        });
     };
 
     return { _fetchAndRender, loadTasks };
@@ -530,7 +566,7 @@ const bindModal = ({ withLock, fetchAndRender }) => {
     if (cancelTaskBtn) cancelTaskBtn.addEventListener('click', closeModal);
 
     if (taskForm) {
-        taskForm.addEventListener('submit', async (e) => {
+        taskForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const taskId = $('#task-id').value;
@@ -549,42 +585,45 @@ const bindModal = ({ withLock, fetchAndRender }) => {
                 }
             }
 
-            await withLock(async () => {
+            withLock((unlock) => {
                 const btn = taskForm.querySelector('button[type="submit"]');
                 btn.disabled = true;
 
-                let response;
+                const handleResponse = (response) => {
+                    btn.disabled = false;
+                    if (response.ok && response.data.success) {
+                        showToast(taskId ? 'Task updated successfully!' : 'Task created successfully!');
+                        closeModal();
+                        fetchAndRender(() => {
+                            unlock();
+                        });
+                    } else {
+                        showToast(response.error || 'Failed to save task', true);
+                        unlock();
+                    }
+                };
+
                 if (taskId) {
-                    response = await apiRequest({
+                    apiRequest({
                         method: 'PUT',
                         url: `/api/tasks/${taskId}`,
                         body: { title, description, category, priority, dueDate },
                         auth: true
-                    });
+                    }, handleResponse);
                 } else {
-                    response = await apiRequest({
+                    apiRequest({
                         method: 'POST',
                         url: '/api/tasks',
                         body: { title, description, category, priority, dueDate, clientId },
                         auth: true
-                    });
-                }
-
-                btn.disabled = false;
-
-                if (response.ok && response.data.success) {
-                    showToast(taskId ? 'Task updated successfully!' : 'Task created successfully!');
-                    closeModal();
-                    await fetchAndRender();
-                } else {
-                    showToast(response.error || 'Failed to save task', true);
+                    }, handleResponse);
                 }
             });
         });
     }
 };
 
-const initTasks = async () => {
+const initTasks = () => {
     if (!isLoggedIn()) {
         window.location.hash = '/';
         return;
@@ -613,7 +652,7 @@ const initTasks = async () => {
     bindFilters(context, renderTasks);
     bindModal({ withLock, fetchAndRender: _fetchAndRender });
 
-    await loadTasks();
+    loadTasks();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
