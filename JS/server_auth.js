@@ -1,5 +1,15 @@
+const REGISTER_REQUEST_CACHE = 'register_request_cache';
+
 class ServerAuth {
     constructor() {
+    }
+
+    _getRegisterCache() {
+        return JSON.parse(localStorage.getItem(REGISTER_REQUEST_CACHE) || '{}');
+    }
+
+    _saveRegisterCache(cache) {
+        localStorage.setItem(REGISTER_REQUEST_CACHE, JSON.stringify(cache));
     }
 
     _generateToken(userId) {
@@ -7,6 +17,13 @@ class ServerAuth {
     }
 
     register(userData) {
+        const requestId = userData.requestId;
+        const cache = this._getRegisterCache();
+
+        if (requestId && cache[requestId]) {
+            return cache[requestId];
+        }
+
         if (!userData.name || !userData.email || !userData.password) {
             return {
                 status: 400,
@@ -35,11 +52,18 @@ class ServerAuth {
 
         usersDB.insert(newUser);
 
-        return {
+        const response = {
             status: 201,
             success: true,
             message: "Registration successful! You can now log in."
         };
+
+        if (requestId) {
+            cache[requestId] = response;
+            this._saveRegisterCache(cache);
+        }
+
+        return response;
     }
 
     login(credentials) {

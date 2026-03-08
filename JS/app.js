@@ -79,7 +79,7 @@ const _doSingleRequest = ({ method, url, body, auth }, callback) => {
         if (xhr.status >= 200 && xhr.status < 300) {
             callback({ ok: true, status: xhr.status, data, error: null });
         } else {
-            callback({ ok: false, status: xhr.status, data, error: data?.message || 'Erreur serveur' });
+            callback({ ok: false, status: xhr.status, data, error: data?.message || 'Error server' });
         }
     };
 
@@ -89,6 +89,7 @@ const _doSingleRequest = ({ method, url, body, auth }, callback) => {
 };
 
 const MAX_RETRIES = 2;
+
 const apiRequest = ({ method, url, body = null, auth = false }, callback) => {
     if (auth && !isLoggedIn()) {
         callback({ ok: false, status: 401, data: null, error: 'Missing token' });
@@ -213,20 +214,29 @@ const initRegister = () => {
                 return;
             }
 
+            if (!form.dataset.requestId) {
+                form.dataset.requestId = "register_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
+            }
+            const requestId = form.dataset.requestId;
+
             const btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
 
             apiRequest({
                 method: 'POST',
                 url: '/api/auth/register',
-                body: { name, email, password }
+                body: { name, email, password, requestId }
             }, (response) => {
                 btn.disabled = false;
 
                 if (response.ok && response.data.success) {
+                    delete form.dataset.requestId;
                     showToast('Registration successful! Please log in.');
                     window.location.hash = '/';
+                } else if (response.status === 0) {
+                    showToast('Network error: your account may have already been created. Try again.', true);
                 } else {
+                    delete form.dataset.requestId;
                     showToast(response.error || 'Registration failed', true);
                 }
             });
